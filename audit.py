@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
-import logging
 import re
 import lxml.etree as ET
 import pprint as pp
 
-logging.basicConfig(level='DEBUG')
 
 filename = 'budapest_hungary_inner.osm'
 expected_street_types = set()
 
+tag_attributes = {}
+street_names = {}
+unexpected_street_names = set()
+unexpected_postcodes = {}
+
 
 def is_proper_street_name(street_name):
-    '''Check wherher the type in the street name is included in the official list of types'''
+    '''Check whether the type in the street name is included in the official list of types'''
     match  = re.match('.*\s(.*)$', street_name)
     if match:
         street_type = match.group(1)
@@ -34,35 +36,32 @@ def is_valid_postcode(postcode):
     return False
 
 
+def count_tags(tag, attributes):
+
+    if tag not in tag_attributes:
+        tag_attributes[tag] = {}
+        tag_attributes[tag]['attributes'] = {}
+        tag_attributes[tag]['count'] = 0
+
+    tag_attributes[tag]['count'] += 1
+
+    for attrib in attributes:
+        if attrib not in tag_attributes[tag]['attributes']:
+            tag_attributes[tag]['attributes'][attrib] = 0
+
+        tag_attributes[tag]['attributes'][attrib] += 1
+
+
 def audit():
     '''Extract street names from <tag> tags in between <way> tags, and validate the street type.'''
-
-    tag_attributes = {}
-    street_names = {}
-    unexpected_street_names = set()
-    unexpected_postcodes = {}
 
     # Loop through the file
     for event, elem in ET.iterparse(filename, events=('start',)):
         tag = elem.tag
         attributes = elem.attrib
 
-        # Add to the dict if it's new tag
-        if tag not in tag_attributes:
-            tag_attributes[tag] = {}
-            tag_attributes[tag]['attributes'] = {}
-            tag_attributes[tag]['count'] = 0
+        count_tags(tag, attributes)
 
-        tag_attributes[tag]['count'] += 1
-
-        # Add to the dict if it's new attribute otherwise increment the counter
-        for attrib in attributes:
-            if attrib not in tag_attributes[tag]['attributes']:
-                tag_attributes[tag]['attributes'][attrib] = 0
-
-            tag_attributes[tag]['attributes'][attrib] += 1
-
-        # Make audits on <way> tags
         if tag == 'way':
             for tag in elem.iter('tag'):
                 if tag.attrib['k'] == 'addr:street':
@@ -82,13 +81,13 @@ def audit():
                     if not is_valid_postcode(postcode):
                         if postcode not in unexpected_postcodes:
                             unexpected_postcodes[postcode] = {'count': 0, 'streets': []}
+
                         unexpected_postcodes[postcode]['count'] += 1
 
+                        # Get the parent element's child tag with k = addr:street attribute and extract the value
                         street_address = [item.attrib['v'] for item in elem.getchildren() if item.tag == 'tag' and item.attrib['k'] == 'addr:street'][0]
                         unexpected_postcodes[postcode]['streets'].append(street_address)
 
-
-    # Finally print out collected values
     print('\nTAG AND ATTRIBUTE COUNTS:\n')
     pp.pprint(tag_attributes)
 
