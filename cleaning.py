@@ -98,18 +98,15 @@ def correct_data_entry(elem_data):
 
 def process_file():
     data = []
-    for event, elem in ET.iterparse(filename, events=('start',)):
-        elem_data = shape_element(elem)
-        if elem_data:
-            data.append(correct_data_entry(elem_data))
-    return data
-
-
-def upload_to_database(data):
     with open('dump.json', 'w') as file_out:
-        file_out.write(json.dumps(data, indent=2))
+        for event, elem in ET.iterparse(filename, events=('start',)):
+            elem_data = shape_element(elem)
+            if elem_data:
+                final_element = correct_data_entry(elem_data)
+                data.append(final_element)
+                file_out.write(json.dumps(final_element) + '\n')
+    return data
 
 
 if __name__ == '__main__':
     data = process_file()
-    upload_to_database(data)
