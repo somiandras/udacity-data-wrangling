@@ -1,4 +1,4 @@
 .DS_Store
 *.bz2
 *.osm
-dump.json
+*.json
