@@ -98,15 +98,10 @@ def correct_data_entry(elem_data):
 
 def process_file():
     data = []
-    counter = 0
     for event, elem in ET.iterparse(filename, events=('start',)):
-        counter += 1
-        print(counter)
         elem_data = shape_element(elem)
         if elem_data:
             data.append(correct_data_entry(elem_data))
-        if counter == 10000:
-            break
     return data
 
 
