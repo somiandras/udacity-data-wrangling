@@ -136,4 +136,12 @@ Based on these criteria four odd postcodes popped up in the audit. In the last o
 ```
 
 
+### Further ideas
 
+#### Dates and timestamps
+It would be useful for several reasons to have the timestamps in date format in MongoDB, but Python `datetime` objects cannot be serialized to JSON, so in this workflow there's no point in changing string timestamps to `datetime` objects with `datetime.strptime()`.
+
+There might be two ways to handle this:
+
+1. Before creating the JSON file transform string timestamps to UNIX timestamps and store them as integers. This makes a little easier to create date-based queries and still doesn't break JSON dump.
+2. After importing the JSON data to MongoDB run a script that transforms the string timestamps to proper `datetime` objects and updates the appropriate field document-by-document. This might take a while but then we can use the timestamps as dates in queries and aggregations.
