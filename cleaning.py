@@ -60,12 +60,12 @@ def shape_element(element):
 
 def clean_streetname(streetname):
     if streetname == 'Kucsma':
-        return 'Kucsma utca'
+        new_streetname = 'Kucsma utca'
     elif streetname.lower() == streetname:
-        streetname[0] = streetname[0].upper()
-        return streetname
+        new_streetname = streetname[0].upper() + streetname[1:]
     else:
-        return streetname
+        new_streetname = streetname
+    return new_streetname
 
 
 def clean_postcode(postcode):
