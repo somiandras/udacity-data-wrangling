@@ -2,7 +2,9 @@
 
 ## Data
 
-__Data:__ `budapest_hungary_inner.osm` (107 MB)
+__Data:__ 
+* `budapest_hungary_inner.osm` (107 MB)
+* `dump.json` (112 MB)
 
 __Source:__ [https://mapzen.com/data/metro-extracts/metro/budapest_hungary/](https://mapzen.com/data/metro-extracts/metro/budapest_hungary/)
 
