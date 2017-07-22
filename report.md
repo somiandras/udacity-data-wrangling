@@ -17,31 +17,37 @@ First, to have a general understanding of the data I ran through the whole xml c
 ```
 TAG AND ATTRIBUTE COUNTS:
 
-{'bounds': {'maxlat': 1, 'maxlon': 1, 'minlat': 1, 'minlon': 1},
- 'member': {'ref': 68919, 'role': 68919, 'type': 68919},
- 'nd': {'ref': 547248},
- 'node': {'changeset': 422629,
-          'id': 422629,
-          'lat': 422629,
-          'lon': 422629,
-          'timestamp': 422629,
-          'uid': 422611,
-          'user': 422611,
-          'version': 422629},
- 'osm': {'generator': 1, 'timestamp': 1, 'version': 1},
- 'relation': {'changeset': 7098,
-              'id': 7098,
-              'timestamp': 7098,
-              'uid': 7098,
-              'user': 7098,
-              'version': 7098},
- 'tag': {'k': 402982, 'v': 402982},
- 'way': {'changeset': 75148,
-         'id': 75148,
-         'timestamp': 75148,
-         'uid': 75148,
-         'user': 75148,
-         'version': 75148}}
+{'bounds': {'attributes': {'maxlat': 1, 'maxlon': 1, 'minlat': 1, 'minlon': 1},
+            'count': 1},
+ 'member': {'attributes': {'ref': 68919, 'role': 68919, 'type': 68919},
+            'count': 68919},
+ 'nd': {'attributes': {'ref': 547248}, 'count': 547248},
+ 'node': {'attributes': {'changeset': 422629,
+                         'id': 422629,
+                         'lat': 422629,
+                         'lon': 422629,
+                         'timestamp': 422629,
+                         'uid': 422611,
+                         'user': 422611,
+                         'version': 422629},
+          'count': 422629},
+ 'osm': {'attributes': {'generator': 1, 'timestamp': 1, 'version': 1},
+         'count': 1},
+ 'relation': {'attributes': {'changeset': 7098,
+                             'id': 7098,
+                             'timestamp': 7098,
+                             'uid': 7098,
+                             'user': 7098,
+                             'version': 7098},
+              'count': 7098},
+ 'tag': {'attributes': {'k': 402982, 'v': 402982}, 'count': 402982},
+ 'way': {'attributes': {'changeset': 75148,
+                        'id': 75148,
+                        'timestamp': 75148,
+                        'uid': 75148,
+                        'user': 75148,
+                        'version': 75148},
+         'count': 75148}}
 ```
 
 But the bogger part of the data is stored in `tag` tags as key-value pairs in the `k` and `v` attributes. Let's look into these.
@@ -135,6 +141,8 @@ Based on these criteria four odd postcodes popped up in the audit. In the last o
  'H-1026': {'count': 2, 'tags': ['Pasaréti út', 'Pasaréti út']}}
 ```
 
+### Auditing coordinates
+I audited lattitude and longitude coordinates to be float numbers around 47.5 and 19 respectively. Not surprisingly no odd coordinates popped up thanks to the way the data was obtained.
 
 ### Further ideas
 
@@ -143,5 +151,5 @@ It would be useful for several reasons to have the timestamps in date format in 
 
 There might be two ways to handle this:
 
-1. Before creating the JSON file transform string timestamps to UNIX timestamps and store them as integers. This makes a little easier to create date-based queries and still doesn't break JSON dump.
-2. After importing the JSON data to MongoDB run a script that transforms the string timestamps to proper `datetime` objects and updates the appropriate field document-by-document. This might take a while but then we can use the timestamps as dates in queries and aggregations.
+1. Either before creating the JSON file transform string timestamps to UNIX timestamps and store them as integers. This makes somewhat easier to create date-based queries and still doesn't break JSON dump.
+2. Ot after importing the JSON data to MongoDB run a script that transforms the string timestamps to proper `datetime` objects and updates the appropriate field document-by-document. This might take a while but then we can use the timestamps as dates in queries and aggregations.

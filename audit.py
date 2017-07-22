@@ -13,6 +13,7 @@ tag_attributes = {}
 street_names = {}
 unexpected_street_names = set()
 unexpected_postcodes = {}
+unexpected_coordinates = []
 
 
 def is_proper_street_name(street_name):
@@ -34,6 +35,10 @@ def is_valid_postcode(postcode):
         if inner_digits <= 23:
             return True
     return False
+
+
+def valid_coordinates(coordinates):
+    return round(coordinates[0], 1) == 47.5 and round(coordinates[1], 0) == 19
 
 
 def count_tags(tag, attributes):
@@ -61,6 +66,15 @@ def audit():
         attributes = elem.attrib
 
         count_tags(tag, attributes)
+
+        if tag == 'node':
+            try:
+                coordinates = [float(attributes['lat']), float(attributes['lon'])]
+            except ValueError:
+                unexpected_coordinates.append(coordinates)
+            else:
+                if not valid_coordinates(coordinates):
+                    unexpected_coordinates.append(coordinates)
 
         if tag == 'way':
             for tag in elem.iter('tag'):
@@ -100,6 +114,8 @@ def audit():
     print('\nUNEXPECTED POSTCODES:\n')
     pp.pprint(unexpected_postcodes)
 
+    print('\nUNEXPECTED COORDINATES:\n')
+    pp.pprint(unexpected_coordinates)
 
 if __name__ == '__main__':
     # street_types_wikipedia.txt contains the official list of Hungarian types 
