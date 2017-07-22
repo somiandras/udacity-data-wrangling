@@ -6,15 +6,13 @@ __Data:__ `budapest_hungary_inner.osm` (107 MB)
 
 __Source:__ [https://mapzen.com/data/metro-extracts/metro/budapest_hungary/](https://mapzen.com/data/metro-extracts/metro/budapest_hungary/)
 
-I created a custom Metro extract on Mapzen for the inner parts of Budapest, capitol of Hungary, as the available basic extract of Budapest area was way bigger than this exercise requires (close to 1GB) and also contained areas that don't count as part of the city. On the other hand the code I wrote could be easily applied (with some modifications) to the greater area.
+I created a custom Metro extract on Mapzen for the inner parts of Budapest, capitol of Hungary. The available basic extract of Budapest area was way bigger than this exercise requires (close to 1GB) and also contained areas that in reality are not part of the city (that may cause conflicts in postcodes or street name duplications).
 
-I chose this area because I live in the city, I have a general understanding of the naming conventions, special characters, etc. Also the different language makes it difficult to simply reuse code snippets from the examples, so I need to thoroughly think through every piece of it and find the appropriate sources for validation.
+I live in the city, I have a general understanding of the naming conventions, special characters, etc. Also the different language makes it difficult to simply reuse code snippets from the examples, so I need to thoroughly think through every piece of it (and fight our usual fight with character encodings...)
 
 ## Auditing data
 
-First, to have a general understanding of the data I ran through the whole xml counting the occurences of different attributes by tags and the overall count of the different tags. 
-
-In this aspect the dataset seems to be pretty uniform, ie. the different type of tags tend to have the same set of attributes for all the instances. For `node` tags `uid` and `username` attributes are missing in a tiny fraction of the cases, in all the other the overall number of occurence for the tag equals the number of times the different attributes were found on that tag.
+First, to have a general understanding of the data I ran through the whole xml counting the occurences of different attributes by tags and the overall count of the different tags. The dataset seems to be pretty uniform, ie. the different type of tags tend to have the same set of attributes for all the instances. For `node` tags `uid` and `username` attributes are missing in a tiny fraction of the cases.
 
 ```
 TAG AND ATTRIBUTE COUNTS:
@@ -46,25 +44,27 @@ TAG AND ATTRIBUTE COUNTS:
          'version': 75148}}
 ```
 
-But this is just the surface as a huge part of the interesting data is stored in `tag` tags as key-value pairs in the `k` and `v` attributes. Let's look into these.
+But the bogger part of the data is stored in `tag` tags as key-value pairs in the `k` and `v` attributes. Let's look into these.
 
 ### Auditing street names
 
+The first candidate for auditing is street names as this is the field where the most error might occur in the data.
+
 #### Gold standard of street types
 
-For a 'gold standard' of types of public places I used the information from [Wikipedia](https://hu.wikipedia.org/wiki/K%C3%B6zter%C3%BClet). This seems to be a complete, official list of the names for different types of streets, roads and other public areas (in Hungarian of course).
-
-It would have been overkill to scrape the webpage for this list, so I just copied and pasted it into a `.txt` file. From that I can extract the official list of types in a set.  This list won't change too often.
+For a 'gold standard' of types of public places I used the information from [Wikipedia](https://hu.wikipedia.org/wiki/K%C3%B6zter%C3%BClet). This seems to be a complete, official list of the Hungarian names for different types of streets, roads and other public areas. I copied it into a `txt` file, from that I can extract the official list of types in a set.
 
 ```
 {'lakótelep', 'utca', 'határút', 'orom', 'erdősor', 'körtér', 'rakpart', 'út', 'üdülőpart', 'part', 'átjáró', 'dűlőút', 'lejáró', 'ösvény', 'sétány', 'forduló', 'liget', 'tér', 'árok', 'mélyút', 'sor', 'sikátor', 'sugárút', 'lejtő', 'körönd', 'kapu', 'határsor', 'gát', 'pincesor', 'dűlő', 'park', 'köz', 'udvar', 'körút', 'lépcső', 'fasor'}
 ```
 
-Pretty long, but the majority of them are fairly rare in the reality. I expect most of the datapoints in my dataset to end with _'utca'_ (street), _'út'_ (road) or _'tér'_ (square). (Maybe it's important to note that in Hungarian we just put the type after the name of the street like 'Ilka _utca_' or 'Döbrentei _tér_', just as in English. It makes it easier to audit it.)
+Pretty long, but the majority of them are fairly rare in the reality. I expect most of the datapoints in my dataset to end with _'utca'_ (street), _'út'_ (road) or _'tér'_ (square). (Maybe it's worth noting that in Hungarian we just put the type after the name of the street like 'Ilka _utca_' or 'Döbrentei _tér_', just as in English.)
 
 #### Checking street types
 
-Turns out the dataset is pretty clean... Even though I found 18 names that don't fit into any of the official categories, most of them actually make sense as these are grammatical variations on the basic type (eg. _'útja'_ means the road (_'út'_) of someone or something, so absolutely valid, same for _'tere'_, etc.). The rest are some unique places like a castle (yes, there are castles in Budapest!) or an island with a specific name.
+Turns out the dataset is pretty clean... Even though I found 18 names that don't fit into any of the official categories, most of them actually make sense as these are grammatical variations of some basic types (eg. _'útja'_ means the road of someone or something, so absolutely valid). 
+
+The rest are some unique places like a castle (yes, there are castles in Budapest!) with their unique names.
 
 ```
 UNEXPECTED STREET NAMES:
@@ -120,11 +120,13 @@ The search also brought up a few cases where the street name starts with lower c
 
 ### Auditing postcodes
 
-In Hungary we use four-digit postcodes. All Budapest postcodes start with 1 and the second and third digit denotes the number of district (I live in the 14th district of Budapest hence the postcode 1143).
+In Hungary we use four-digit postcodes. All Budapest postcodes start with 1 and the second and third digit denotes the number of district. There are 23 districts in the city, so the inner two digits should be between 01 and 23, except for the island called Margitsziget, where the inner two digits are 00. 
 
-There are 23 districts in the city, so the inner two digits should be between 01 and 23, except for the island called Margitsziget, where the inner two digits are 00. There are no residential areas on the island but there are some cultural and sports facilities so we should still expect a few 00s to pop up in the dataset. ([The Districts of Budapest (Wikipedia)](https://en.wikipedia.org/wiki/List_of_districts_in_Budapest))
+There are no residential areas on the island but there are some cultural and sports facilities so we should still expect a few 00s to pop up in the dataset. ([The Districts of Budapest (Wikipedia)](https://en.wikipedia.org/wiki/List_of_districts_in_Budapest))
 
-Based on these criteria four odd postcodes popped up in the audit. In the last 'H' denotes Hungary in an international postcode format. It's a pattern we can easily correct programatically in the dataset.
+Based on these criteria four odd postcodes popped up in the audit. In the last one 'H' denotes Hungary in an international postcode format. It's a pattern we can easily correct programatically in the dataset. 
+
+`1503` and `1507` are most likely typos for `1053` and `1057` (confirmed by the street names) while `1476` seems to be a valid postcode for some reason even though it does not seem to adhere to the standard format (but Google also gives [valid results](https://www.google.com/search?q=1476+budapest+%C3%BCll%C5%91i+%C3%BAt&oq=1476+budapest+%C3%BCll%C5%91i+%C3%BAt+&aqs=chrome..69i57j69i59.2827j0j9&sourceid=chrome&ie=UTF-8))
 
 ```
 {'1476': {'count': 1, 'tags': ['Üllői út']},
@@ -133,5 +135,5 @@ Based on these criteria four odd postcodes popped up in the audit. In the last '
  'H-1026': {'count': 2, 'tags': ['Pasaréti út', 'Pasaréti út']}}
 ```
 
-`1503` and `1507` are most likely typos for `1053` and `1057` (confirmed by the street names) while `1476` seems to be a valid postcode for some reason even though it does not adhere to the format (eg. Google gives [valid results](https://www.google.com/search?q=1476+budapest+%C3%BCll%C5%91i+%C3%BAt&oq=1476+budapest+%C3%BCll%C5%91i+%C3%BAt+&aqs=chrome..69i57j69i59.2827j0j9&sourceid=chrome&ie=UTF-8))
+
 
