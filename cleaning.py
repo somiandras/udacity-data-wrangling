@@ -3,7 +3,6 @@
 
 import re
 import lxml.etree as ET
-import pprint as pp
 import json
 from datetime import datetime
 
@@ -11,7 +10,7 @@ from datetime import datetime
 filename = 'budapest_hungary_inner.osm'
 TAGS_TO_PROCESS = ['node', 'way', 'relation']
 CREATED = ['user', 'uid', 'timestamp', 'version', 'changeset']
-POS = ['lon', 'lat']
+POS = ['lat', 'lon']
 
 
 def shape_element(element):
@@ -24,10 +23,14 @@ def shape_element(element):
                 if 'created' not in elem_data:
                     elem_data['created'] = {}
                 elem_data['created'][attr] = element.attrib[attr]
-            elif attr in POS:
+            elif attr == 'lat':
                 if 'pos' not in elem_data:
-                    elem_data['pos'] = {}
-                elem_data['pos'][attr] = float(element.attrib[attr])
+                    elem_data['pos'] = [None, None]
+                elem_data['pos'][0] = float(element.attrib[attr])
+            elif attr == 'lon':
+                if 'pos' not in elem_data:
+                    elem_data['pos'] = [None, None]
+                elem_data['pos'][1] = float(element.attrib[attr])
             else:
                 elem_data[attr] = element.attrib[attr]
 
