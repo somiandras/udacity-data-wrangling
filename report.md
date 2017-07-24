@@ -56,17 +56,11 @@ But most of the interesting data is stored in `tag` tags as key-value pairs in t
 
 ### Auditing street names
 
-For a 'gold standard' of types of public places I used the information from [Wikipedia](https://hu.wikipedia.org/wiki/K%C3%B6zter%C3%BClet). This seems to be a complete, official list of the Hungarian names for different types of streets, roads and other public areas. I copied it into a `txt` file, from that I can extract the official list of types in a set.
+For a 'gold standard' of types of public places I used the information from [Wikipedia](https://hu.wikipedia.org/wiki/K%C3%B6zter%C3%BClet). This seems to be a complete, official list of the Hungarian names for different types of streets, roads and other public areas.
 
-``` python
-{'lakótelep', 'utca', 'határút', 'orom', 'erdősor', 'körtér', 'rakpart', 'út', 'üdülőpart', 'part', 'átjáró', 'dűlőút', 'lejáró', 'ösvény', 'sétány', 'forduló', 'liget', 'tér', 'árok', 'mélyút', 'sor', 'sikátor', 'sugárút', 'lejtő', 'körönd', 'kapu', 'határsor', 'gát', 'pincesor', 'dűlő', 'park', 'köz', 'udvar', 'körút', 'lépcső', 'fasor'}
-```
+It’s a pretty long list but most of the datapoints should end with one of the three most popular types (street, road, square). (In Hungarian we just put the type after the name of the street in small caps like 'Ilka _utca_' or 'Döbrentei _tér_')
 
-Pretty long, but the majority of them are fairly rare in the reality. I expect most of the datapoints in my dataset to end with _'utca'_ (street), _'út'_ (road) or _'tér'_ (square). (Maybe it's worth noting that in Hungarian we just put the type after the name of the street in small caps like 'Ilka _utca_' or 'Döbrentei _tér_')
-
-Turns out the dataset is pretty clean... Even though I found 18 names that don't fit into any of the official categories, most of them actually make sense as these are grammatical variations of basic types (eg. _'útja'_ means the road of someone or something, so absolutely valid). 
-
-The rest are some unique places like a castle (yes, there are castles in Budapest!) with their unique names.
+I found 18 names that don't fit into any of the official categories, but most of them actually make sense as they are grammatical variations of basic types (eg. _'útja'_ means the road of someone or something, so absolutely valid). The rest are some unique places like a castle (yes, there are castles in Budapest!) with their unique names.
 
 ``` python
 UNEXPECTED STREET NAMES:
@@ -93,17 +87,6 @@ UNEXPECTED STREET NAMES:
 
 We have only one entry that is suspicious: _'Kucsma'_. That's actually the name of the street not the type, and apparently _'utca'_ (street) is missing from the end. _'Kucsma utca'_ occures seven times in the dataset.
 
-``` python
-...
- 'Kruspér utca': 2,
- 'Krúdy Gyula utca': 4,
- 'Kucsma': 1,
- 'Kucsma utca': 7,
- 'Kulacs utca': 3,
- 'Kulpa utca': 8,
-...
-```
-
 The search also brought up a few cases where the street name starts with lower case letter. This should be also handled before uploading the dataset to a database.
 
 ``` python
@@ -123,9 +106,9 @@ In Hungary we use four-digit postcodes. All Budapest postcodes start with 1 and 
 
 There are no residential areas on the island but there are some cultural and sports facilities so we should still expect a few 00s to pop up in the dataset. ([The Districts of Budapest (Wikipedia)](https://en.wikipedia.org/wiki/List_of_districts_in_Budapest))
 
-Based on these criteria four odd postcodes popped up in the audit. In the last one 'H' denotes Hungary in an international postcode format. It's a pattern we can easily correct programatically in the dataset. 
+Four odd postcodes popped up in the audit. In the last one 'H' denotes Hungary in an international postcode format. It's a pattern we can easily correct programatically in the dataset. 
 
-`1503` and `1507` are most likely typos for `1053` and `1057` (confirmed by the street names) while `1476` seems to be a valid postcode for some reason even though it does not seem to adhere to the standard format (but Google also gives [valid results](https://www.google.com/search?q=1476+budapest+%C3%BCll%C5%91i+%C3%BAt&oq=1476+budapest+%C3%BCll%C5%91i+%C3%BAt+&aqs=chrome..69i57j69i59.2827j0j9&sourceid=chrome&ie=UTF-8))
+`1503` and `1507` are most likely typos for `1053` and `1057` (confirmed by the street names) while `1476` seems to be a valid postcode even though it does not seem to adhere to the standard format (but Google also gives [valid results](https://www.google.com/search?q=1476+budapest+%C3%BCll%C5%91i+%C3%BAt&oq=1476+budapest+%C3%BCll%C5%91i+%C3%BAt+&aqs=chrome..69i57j69i59.2827j0j9&sourceid=chrome&ie=UTF-8))
 
 ``` python
 {'1476': {'count': 1, 'tags': ['Üllői út']},
@@ -134,7 +117,8 @@ Based on these criteria four odd postcodes popped up in the audit. In the last o
  'H-1026': {'count': 2, 'tags': ['Pasaréti út', 'Pasaréti út']}}
 ```
 
-### Auditing coordinates
+### Auditing coordinates
+
 I audited lattitude and longitude coordinates to be float numbers around 47.5 and 19 respectively. Not surprisingly no odd coordinates popped up thanks to the way the data was obtained.
 
 ## Querying the data
@@ -164,7 +148,7 @@ I audited lattitude and longitude coordinates to be float numbers around 47.5 an
  {'count': 422629, 'type': 'node'}]
 ```
 
-#### Top 10 postcodes by number of occurence
+#### Top 5 postcodes by number of occurence
 The 11th district is one of the biggest one (maybe the biggest one), no surprise that `x11x` postcodes are the most frequent in the dataset.
 
 ``` python
@@ -177,7 +161,7 @@ The 11th district is one of the biggest one (maybe the biggest one), no surprise
         'count': {'$sum': 1}
     }},
     {'$sort': {'count': -1}},
-    {'$limit': 10},
+    {'$limit': 5},
     {'$project': {
         '_id': 0,
         'postcode': '$_id',
@@ -189,12 +173,7 @@ The 11th district is one of the biggest one (maybe the biggest one), no surprise
  {'count': 1566, 'postcode': 1118},
  {'count': 1035, 'postcode': 1124},
  {'count': 1025, 'postcode': 1025},
- {'count': 735, 'postcode': 1089},
- {'count': 702, 'postcode': 1131},
- {'count': 562, 'postcode': 1121},
- {'count': 561, 'postcode': 1126},
- {'count': 538, 'postcode': 1085},
- {'count': 528, 'postcode': 1113}]
+ {'count': 735, 'postcode': 1089}]
 ```
 
 #### Number of contributing users
@@ -204,8 +183,9 @@ Not too many compared to the population of 2 million people...
 1232
 ```
 
-#### Top 10 users
+#### Top 3 users
 _igor2_ is the big winner with 3 times more entries than the second most active user.
+
 ``` python
 > db.budapest.aggregate([
     {'$group': {
@@ -213,7 +193,7 @@ _igor2_ is the big winner with 3 times more entries than the second most active 
         'count': {'$sum': 1}
     }},
     {'$sort': {'count': -1}},
-    {'$limit': 10},
+    {'$limit': 3},
     {'$project': {
         '_id': 0,
         'username': '$_id',
@@ -223,14 +203,7 @@ _igor2_ is the big winner with 3 times more entries than the second most active 
 
 [{'count': 134944, 'username': 'igor2'},
  {'count': 33466, 'username': 'MartinHun'},
- {'count': 23452, 'username': 'vasony'},
- {'count': 22656, 'username': 'Adam Harangozó'},
- {'count': 19440, 'username': 'BáthoryPéter'},
- {'count': 19175, 'username': 'kdano'},
- {'count': 15521, 'username': 'leveskockaa'},
- {'count': 14983, 'username': 'denesviktor'},
- {'count': 13360, 'username': 'flaktack'},
- {'count': 12045, 'username': 'Athoss15'}]
+ {'count': 23452, 'username': 'vasony'}]
 ```
 
 #### Number and type of amenities
@@ -252,7 +225,7 @@ Apparently Budapest is the city of benches.
     {'$sort': {
         'count': -1
     }},
-    {'$limit': 10},
+    {'$limit': 5},
     {'$project': {
         '_id': 0,
         'type': '$_id',
@@ -264,12 +237,7 @@ Apparently Budapest is the city of benches.
  {'count': 975, 'type': 'restaurant'},
  {'count': 893, 'type': 'bicycle_parking'},
  {'count': 791, 'type': 'parking'},
- {'count': 695, 'type': 'waste_basket'},
- {'count': 511, 'type': 'pub'},
- {'count': 504, 'type': 'cafe'},
- {'count': 477, 'type': 'fast_food'},
- {'count': 452, 'type': 'vending_machine'},
- {'count': 249, 'type': 'bank'}]
+ {'count': 695, 'type': 'waste_basket'}]
 ```
 
 #### Most popular cuisines

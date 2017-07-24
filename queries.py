@@ -22,7 +22,7 @@ grouped = db.budapest.aggregate([
 print('\nCOUNT BY TAGS\n')
 pp.pprint(list(grouped))
 
-# Top 10 postcodes by count of tags
+# Top 5 postcodes by count of tags
 postcodes = db.budapest.aggregate([
     {'$match': {
         'address.postcode': {'$exists': True}
@@ -32,7 +32,7 @@ postcodes = db.budapest.aggregate([
         'count': {'$sum': 1}
     }},
     {'$sort': {'count': -1}},
-    {'$limit': 10},
+    {'$limit': 5},
     {'$project': {
         '_id': 0,
         'postcode': '$_id',
@@ -40,28 +40,28 @@ postcodes = db.budapest.aggregate([
     }}
 ])
 
-print('\nTOP 10 POSTCODES\n')
+print('\nTOP 5 POSTCODES\n')
 pp.pprint(list(postcodes))
 
 # Number of users
 users = db.budapest.distinct('created.user')
 print('\nNUMBER OF CONTRIBUTORS: {}\n'.format(len(users)))
 
-# Top 10 users by occurence
+# Top 3 users by occurence
 agg = db.budapest.aggregate([
     {'$group': {
         '_id': '$created.user',
         'count': {'$sum': 1}
     }},
     {'$sort': {'count': -1}},
-    {'$limit': 10},
+    {'$limit': 3},
     {'$project': {
         '_id': 0,
         'username': '$_id',
         'count': 1
     }}
 ])
-print('\nTOP 10 USERS:\n')
+print('\nTOP 3 USERS:\n')
 pp.pprint(list(agg))
 
 # Number of amenities
