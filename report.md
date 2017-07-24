@@ -1,16 +1,16 @@
-# Data Wrangling Project<br><small>András Somi, 2017. July</small>
+# Data Wrangling Project<br><small>András Somi, 2017. July</small>
 
 ## Data
 
-__Data:__ 
 * `budapest_hungary_inner.osm` (107 MB)
 * `dump.json` (114 MB)
-
-__Source:__ [https://mapzen.com/data/metro-extracts/metro/budapest_hungary/](https://mapzen.com/data/metro-extracts/metro/budapest_hungary/)
 
 I created a custom Metro extract on Mapzen for the inner parts of Budapest, capitol of Hungary. The available basic extract of Budapest area was way bigger than this exercise requires (close to 1GB) and also contained areas that in reality are not part of the city (that may cause conflicts in postcodes or street name duplications).
 
 I live in the city, I have a general understanding of the naming conventions, special characters, etc. Also the different language makes it difficult to simply reuse code snippets from the examples, so I need to thoroughly think through every piece of it.
+
+__Source:__ [https://mapzen.com/data/metro-extracts/metro/budapest_hungary/](https://mapzen.com/data/metro-extracts/metro/budapest_hungary/)
+
 
 ## Auditing data
 
@@ -56,8 +56,6 @@ But most of the interesting data is stored in `tag` tags as key-value pairs in t
 
 ### Auditing street names
 
-#### Gold standard of street types
-
 For a 'gold standard' of types of public places I used the information from [Wikipedia](https://hu.wikipedia.org/wiki/K%C3%B6zter%C3%BClet). This seems to be a complete, official list of the Hungarian names for different types of streets, roads and other public areas. I copied it into a `txt` file, from that I can extract the official list of types in a set.
 
 ``` python
@@ -65,8 +63,6 @@ For a 'gold standard' of types of public places I used the information from [Wik
 ```
 
 Pretty long, but the majority of them are fairly rare in the reality. I expect most of the datapoints in my dataset to end with _'utca'_ (street), _'út'_ (road) or _'tér'_ (square). (Maybe it's worth noting that in Hungarian we just put the type after the name of the street in small caps like 'Ilka _utca_' or 'Döbrentei _tér_')
-
-#### Checking street types
 
 Turns out the dataset is pretty clean... Even though I found 18 names that don't fit into any of the official categories, most of them actually make sense as these are grammatical variations of basic types (eg. _'útja'_ means the road of someone or something, so absolutely valid). 
 
@@ -107,8 +103,6 @@ We have only one entry that is suspicious: _'Kucsma'_. That's actually the name 
  'Kulpa utca': 8,
 ...
 ```
-
-#### Capital letters
 
 The search also brought up a few cases where the street name starts with lower case letter. This should be also handled before uploading the dataset to a database.
 
@@ -170,7 +164,7 @@ I audited lattitude and longitude coordinates to be float numbers around 47.5 an
  {'count': 422629, 'type': 'node'}]
 ```
 
-### Top 10 postcodes by number of occurence
+#### Top 10 postcodes by number of occurence
 The 11th district is one of the biggest one (maybe the biggest one), no surprise that `x11x` postcodes are the most frequent in the dataset.
 
 ``` python
@@ -203,7 +197,7 @@ The 11th district is one of the biggest one (maybe the biggest one), no surprise
  {'count': 528, 'postcode': 1113}]
 ```
 
-### Number of contributing users
+#### Number of contributing users
 Not too many compared to the population of 2 million people...
 ``` python
 > db.budapest.distinct('created.user').length
@@ -278,7 +272,7 @@ Apparently Budapest is the city of benches.
  {'count': 249, 'type': 'bank'}]
 ```
 
-#### Most popular cuisines
+#### Most popular cuisines
 
 Italian is our choice after the local tastes. (I guess pizza delivery is still a big business here.)
 
@@ -307,7 +301,7 @@ db.budapest.aggregate([
 ```
 
 
-### Further ideas
+## Further ideas
 
 #### Dates and timestamps
 It would be useful to have the timestamps in date format in MongoDB, but Python `datetime` objects cannot be serialized to JSON so in this workflow of importing the data at once into MongoDB we shouldn't change the timestamps from strings to dates.
