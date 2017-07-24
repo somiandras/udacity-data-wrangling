@@ -1,0 +1,3 @@
+Data: https://mapzen.com/data/metro-extracts/metro/budapest_hungary/
+Street types from Wikipedia: https://hu.wikipedia.org/wiki/K%C3%B6zter%C3%BClet
+OSM XML format guide: http://wiki.openstreetmap.org/wiki/OSM_XML#Example_OSM_XML_file
