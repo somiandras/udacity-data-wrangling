@@ -6,7 +6,7 @@ import lxml.etree as ET
 import pprint as pp
 
 
-filename = 'budapest_hungary_inner.osm'
+osm_file = 'budapest_hungary_inner.osm'
 expected_street_types = set()
 
 tag_attributes = {}
@@ -38,11 +38,12 @@ def is_valid_postcode(postcode):
 
 
 def valid_coordinates(coordinates):
+    '''Check whether lat, lon coordinates are of the right magnitude'''
     return round(coordinates[0], 1) == 47.5 and round(coordinates[1], 0) == 19
 
 
 def count_tags(tag, attributes):
-
+    '''Count different types of tags in the file'''
     if tag not in tag_attributes:
         tag_attributes[tag] = {}
         tag_attributes[tag]['attributes'] = {}
@@ -58,16 +59,15 @@ def count_tags(tag, attributes):
 
 
 def audit():
-    '''Extract street names from <tag> tags in between <way> tags, and validate the street type.'''
-
-    # Loop through the file
-    for event, elem in ET.iterparse(filename, events=('start',)):
+    '''Check for <tag> elements in <way> and <node> elements and validate them'''
+    for event, elem in ET.iterparse(osm_file, events=('start',)):
         tag = elem.tag
         attributes = elem.attrib
 
         count_tags(tag, attributes)
 
         if tag == 'node':
+            # Check for non-float or outlier coordinates
             try:
                 coordinates = [float(attributes['lat']), float(attributes['lon'])]
             except ValueError:
@@ -86,7 +86,6 @@ def audit():
 
                     if street not in street_names:
                         street_names[street] = 0
-
                     street_names[street] += 1
 
                 if tag.attrib['k'] == 'addr:postcode':
@@ -95,13 +94,14 @@ def audit():
                     if not is_valid_postcode(postcode):
                         if postcode not in unexpected_postcodes:
                             unexpected_postcodes[postcode] = {'count': 0, 'streets': []}
-
                         unexpected_postcodes[postcode]['count'] += 1
 
                         # Get the parent element's child tag with k = addr:street attribute and extract the value
                         street_address = [item.attrib['v'] for item in elem.getchildren() if item.tag == 'tag' and item.attrib['k'] == 'addr:street'][0]
                         unexpected_postcodes[postcode]['streets'].append(street_address)
 
+
+    # Print out all the findings of the audit
     print('\nTAG AND ATTRIBUTE COUNTS:\n')
     pp.pprint(tag_attributes)
 
@@ -116,6 +116,7 @@ def audit():
 
     print('\nUNEXPECTED COORDINATES:\n')
     pp.pprint(unexpected_coordinates)
+
 
 if __name__ == '__main__':
     # street_types_wikipedia.txt contains the official list of Hungarian types 

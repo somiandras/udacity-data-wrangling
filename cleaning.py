@@ -6,13 +6,14 @@ import lxml.etree as ET
 import json
 
 
-filename = 'budapest_hungary_inner.osm'
+osm_file = 'budapest_hungary_inner.osm'
 TAGS_TO_PROCESS = ['node', 'way', 'relation']
 CREATED = ['user', 'uid', 'timestamp', 'version', 'changeset']
 POS = ['lat', 'lon']
 
 
 def shape_element(element):
+    '''Create dict from XML element'''
     if element.tag in TAGS_TO_PROCESS:
         elem_data = {}
         elem_data['type'] = element.tag
@@ -35,12 +36,14 @@ def shape_element(element):
 
         for tag in element.iter():
             if tag.tag == 'tag':
+                # Check for tags containing 'addr:...' but avoid 'addr:...:...' format tags
                 match = re.match('^addr:([^:]*)$', tag.attrib['k'])
                 if match:
                     if 'address' not in elem_data:
                         elem_data['address'] = {}
                     elem_data['address'][match.group(1)] = tag.attrib['v']
                 else:
+                    # Non-address tags are simple properties on the element
                     elem_data[tag.attrib['k']] = tag.attrib['v']
             elif tag.tag == 'nd':
                 if 'ref' in tag.attrib:
@@ -60,6 +63,7 @@ def shape_element(element):
 
 
 def clean_streetname(streetname):
+    '''Programatically fix issues of street names'''
     if streetname == 'Kucsma':
         new_streetname = 'Kucsma utca'
     elif streetname.lower() == streetname:
@@ -70,6 +74,7 @@ def clean_streetname(streetname):
 
 
 def clean_postcode(postcode):
+    '''Programatically fix issues with postcodes'''
     postcode_string = str(postcode)
     if postcode_string[:2] == 'H-':
         return int(postcode_string[2:])
@@ -82,12 +87,7 @@ def clean_postcode(postcode):
 
 
 def correct_data_entry(elem_data):
-    # Issues to clean before upload:
-    # 1. Missing 'utca' from 'Kucsma' in one case
-    # 2. Lower-case street names
-    # 3. Remove 'H-' from postcodes
-    # 4. Change 1503 and 1507 postcodes to 1053 and 1057
-
+    '''Fix known issues in data before adding to the database'''
     if 'address' in elem_data:
         if 'street' in elem_data['address']:
             elem_data['address']['street'] = clean_streetname(elem_data['address']['street'])
@@ -97,9 +97,10 @@ def correct_data_entry(elem_data):
 
 
 def process_file():
+    '''Transform the contents of the OSM XML file to a JSON file'''
     data = []
     with open('dump.json', 'w') as file_out:
-        for event, elem in ET.iterparse(filename, events=('start',)):
+        for event, elem in ET.iterparse(osm_file, events=('start',)):
             elem_data = shape_element(elem)
             if elem_data:
                 final_element = correct_data_entry(elem_data)
