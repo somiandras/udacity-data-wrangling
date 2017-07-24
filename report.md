@@ -4,7 +4,7 @@
 
 __Data:__ 
 * `budapest_hungary_inner.osm` (107 MB)
-* `dump.json` (112 MB)
+* `dump.json` (114 MB)
 
 __Source:__ [https://mapzen.com/data/metro-extracts/metro/budapest_hungary/](https://mapzen.com/data/metro-extracts/metro/budapest_hungary/)
 
@@ -16,7 +16,7 @@ I live in the city, I have a general understanding of the naming conventions, sp
 
 First, to have a general understanding of the data I ran through the whole xml counting the occurences of different attributes by tags and the overall count of the different tags. The dataset seems to be pretty uniform, ie. the different type of tags tend to have the same set of attributes for all the instances. For `node` tags `uid` and `username` attributes are missing in a tiny fraction of the cases.
 
-```
+``` python
 TAG AND ATTRIBUTE COUNTS:
 
 {'bounds': {'attributes': {'maxlat': 1, 'maxlon': 1, 'minlat': 1, 'minlon': 1},
@@ -60,7 +60,7 @@ But most of the interesting data is stored in `tag` tags as key-value pairs in t
 
 For a 'gold standard' of types of public places I used the information from [Wikipedia](https://hu.wikipedia.org/wiki/K%C3%B6zter%C3%BClet). This seems to be a complete, official list of the Hungarian names for different types of streets, roads and other public areas. I copied it into a `txt` file, from that I can extract the official list of types in a set.
 
-```
+``` python
 {'lakótelep', 'utca', 'határút', 'orom', 'erdősor', 'körtér', 'rakpart', 'út', 'üdülőpart', 'part', 'átjáró', 'dűlőút', 'lejáró', 'ösvény', 'sétány', 'forduló', 'liget', 'tér', 'árok', 'mélyút', 'sor', 'sikátor', 'sugárút', 'lejtő', 'körönd', 'kapu', 'határsor', 'gát', 'pincesor', 'dűlő', 'park', 'köz', 'udvar', 'körút', 'lépcső', 'fasor'}
 ```
 
@@ -72,7 +72,7 @@ Turns out the dataset is pretty clean... Even though I found 18 names that don't
 
 The rest are some unique places like a castle (yes, there are castles in Budapest!) with their unique names.
 
-```
+``` python
 UNEXPECTED STREET NAMES:
 
 {'Erzsébet királyné útja',
@@ -97,7 +97,7 @@ UNEXPECTED STREET NAMES:
 
 We have only one entry that is suspicious: _'Kucsma'_. That's actually the name of the street not the type, and apparently _'utca'_ (street) is missing from the end. _'Kucsma utca'_ occures seven times in the dataset.
 
-```
+``` python
 ...
  'Kruspér utca': 2,
  'Krúdy Gyula utca': 4,
@@ -112,7 +112,7 @@ We have only one entry that is suspicious: _'Kucsma'_. That's actually the name 
 
 The search also brought up a few cases where the street name starts with lower case letter. This should be also handled before uploading the dataset to a database.
 
-```
+``` python
 ...
  'Zöldmáli lejtő': 7,
  'dessewffy utca': 1,  # SMALL CAPS
@@ -133,7 +133,7 @@ Based on these criteria four odd postcodes popped up in the audit. In the last o
 
 `1503` and `1507` are most likely typos for `1053` and `1057` (confirmed by the street names) while `1476` seems to be a valid postcode for some reason even though it does not seem to adhere to the standard format (but Google also gives [valid results](https://www.google.com/search?q=1476+budapest+%C3%BCll%C5%91i+%C3%BAt&oq=1476+budapest+%C3%BCll%C5%91i+%C3%BAt+&aqs=chrome..69i57j69i59.2827j0j9&sourceid=chrome&ie=UTF-8))
 
-```
+``` python
 {'1476': {'count': 1, 'tags': ['Üllői út']},
  '1503': {'count': 1, 'tags': ['Kérő utca']},
  '1507': {'count': 1, 'tags': ['Irinyi József utca']},
@@ -146,13 +146,13 @@ I audited lattitude and longitude coordinates to be float numbers around 47.5 an
 ## Querying the data
 
 #### Number of documents
-```
+``` python
 > db.budapest.find().count()
 504875
 ```
 
 #### Count by type of tag
-```
+``` python
 > db.budapest.aggregate([
     {'$group': {
         '_id': '$type',
@@ -173,7 +173,7 @@ I audited lattitude and longitude coordinates to be float numbers around 47.5 an
 ### Top 10 postcodes by number of occurence
 The 11th district is one of the biggest one (maybe the biggest one), no surprise that `x11x` postcodes are the most frequent in the dataset.
 
-```
+``` python
 > db.budapest.aggregate([
     {'$match': {
         'address.postcode': {'$exists': True}
@@ -204,15 +204,15 @@ The 11th district is one of the biggest one (maybe the biggest one), no surprise
 ```
 
 ### Number of contributing users
-
-```
+Not too many compared to the population of 2 million people...
+``` python
 > db.budapest.distinct('created.user').length
 1232
 ```
 
 #### Top 10 users
-
-```
+_igor2_ is the big winner with 3 times more entries than the second most active user.
+``` python
 > db.budapest.aggregate([
     {'$group': {
         '_id': '$created.user',
@@ -239,14 +239,87 @@ The 11th district is one of the biggest one (maybe the biggest one), no surprise
  {'count': 12045, 'username': 'Athoss15'}]
 ```
 
+#### Number and type of amenities
+
+Apparently Budapest is the city of benches.
+
+``` python
+> db.budapest.find({'amenity': {'$exists': True}}).count()
+10271
+
+> db.budapest.aggregate([
+    {'$match': {
+        'amenity': {'$exists': True}
+    }},
+    {'$group': {
+        '_id': '$amenity',
+        'count': {'$sum': 1}
+    }},
+    {'$sort': {
+        'count': -1
+    }},
+    {'$limit': 10},
+    {'$project': {
+        '_id': 0,
+        'type': '$_id',
+        'count': 1
+    }}
+])
+
+[{'count': 1394, 'type': 'bench'},
+ {'count': 975, 'type': 'restaurant'},
+ {'count': 893, 'type': 'bicycle_parking'},
+ {'count': 791, 'type': 'parking'},
+ {'count': 695, 'type': 'waste_basket'},
+ {'count': 511, 'type': 'pub'},
+ {'count': 504, 'type': 'cafe'},
+ {'count': 477, 'type': 'fast_food'},
+ {'count': 452, 'type': 'vending_machine'},
+ {'count': 249, 'type': 'bank'}]
+```
+
+#### Most popular cuisines
+
+Italian is our choice after the local tastes. (I guess pizza delivery is still a big business here.)
+
+``` python
+db.budapest.aggregate([
+    {'$match': {
+        'amenity': 'restaurant',
+        'cuisine': {'$exists': True}
+    }},
+    {'$group': {
+        '_id': '$cuisine',
+        'count': {'$sum': 1}
+    }},
+    {'$sort': {'count': -1}},
+    {'$limit': 3},
+    {'$project': {
+        '_id': 0,
+        'cuisine': '$_id',
+        'count': 1
+    }}
+])
+
+[{'count': 76, 'cuisine': 'regional'},
+ {'count': 61, 'cuisine': 'hungarian'},
+ {'count': 54, 'cuisine': 'italian'}]
+```
 
 
 ### Further ideas
 
 #### Dates and timestamps
-It would be useful to have the timestamps in date format in MongoDB, but Python `datetime` objects cannot be serialized to JSON.
+It would be useful to have the timestamps in date format in MongoDB, but Python `datetime` objects cannot be serialized to JSON so in this workflow of importing the data at once into MongoDB we shouldn't change the timestamps from strings to dates.
+
+``` python
+entry = db.budapest.find_one({'created.timestamp': {'$exists': True}})
+timestamp = entry['created']['timestamp']
+print(isinstance(timestamp, str))
+True
+```
 
 There might be several ways to handle this:
 
-1. Either before creating the JSON file transform string timestamps to UNIX timestamps and store them as integers. This makes somewhat easier to create date-based queries and still doesn't break the JSON dump, but not the most convenient way to handle timestamps.
-2. Or after importing the JSON data to MongoDB run a script that transforms the string timestamps to proper `datetime` objects and updates the appropriate field document-by-document. This would be a time consuming operation but then we can use the timestamps as dates in queries and aggregations.
+1. Before creating the JSON file transform string timestamps to UNIX timestamps and store them as integers. This makes somewhat easier to create date-based queries and still doesn't break the JSON dump (still not the most convenient way to handle timestamps).
+2. After importing the JSON data to MongoDB run a script that transforms the string timestamps to proper `datetime` objects and updates the appropriate field document-by-document. This would be a time-consuming operation but then we can use the timestamps as dates in queries and aggregations.
