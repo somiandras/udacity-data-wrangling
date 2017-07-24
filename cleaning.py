@@ -4,7 +4,6 @@
 import re
 import lxml.etree as ET
 import json
-from datetime import datetime
 
 
 filename = 'budapest_hungary_inner.osm'
@@ -41,6 +40,8 @@ def shape_element(element):
                     if 'address' not in elem_data:
                         elem_data['address'] = {}
                     elem_data['address'][match.group(1)] = tag.attrib['v']
+                else:
+                    elem_data[tag.attrib['k']] = tag.attrib['v']
             elif tag.tag == 'nd':
                 if 'ref' in tag.attrib:
                     if 'node_refs' not in elem_data:
@@ -86,7 +87,6 @@ def correct_data_entry(elem_data):
     # 2. Lower-case street names
     # 3. Remove 'H-' from postcodes
     # 4. Change 1503 and 1507 postcodes to 1053 and 1057
-    # 5. Change timestamp to datetime
 
     if 'address' in elem_data:
         if 'street' in elem_data['address']:
