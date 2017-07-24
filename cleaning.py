@@ -13,7 +13,7 @@ POS = ['lat', 'lon']
 
 
 def shape_element(element):
-    '''Create dict from XML element'''
+    '''Create dict from XML element based on course examples'''
     if element.tag in TAGS_TO_PROCESS:
         elem_data = {}
         elem_data['type'] = element.tag
@@ -97,7 +97,7 @@ def correct_data_entry(elem_data):
 
 
 def process_file():
-    '''Transform the contents of the OSM XML file to a JSON file'''
+    '''Transform the contents of the OSM XML file to a JSON file, based on the course examples'''
     data = []
     with open('dump.json', 'w') as file_out:
         for event, elem in ET.iterparse(osm_file, events=('start',)):

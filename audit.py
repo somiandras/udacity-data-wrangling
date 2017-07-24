@@ -59,7 +59,7 @@ def count_tags(tag, attributes):
 
 
 def audit():
-    '''Check for <tag> elements in <way> and <node> elements and validate them'''
+    '''Check for <tag> elements in <way> and <node> elements and validate them based on course examples'''
     for event, elem in ET.iterparse(osm_file, events=('start',)):
         tag = elem.tag
         attributes = elem.attrib
