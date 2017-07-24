@@ -10,7 +10,7 @@ __Source:__ [https://mapzen.com/data/metro-extracts/metro/budapest_hungary/](htt
 
 I created a custom Metro extract on Mapzen for the inner parts of Budapest, capitol of Hungary. The available basic extract of Budapest area was way bigger than this exercise requires (close to 1GB) and also contained areas that in reality are not part of the city (that may cause conflicts in postcodes or street name duplications).
 
-I live in the city, I have a general understanding of the naming conventions, special characters, etc. Also the different language makes it difficult to simply reuse code snippets from the examples, so I need to thoroughly think through every piece of it (and fight our usual fight with character encodings...)
+I live in the city, I have a general understanding of the naming conventions, special characters, etc. Also the different language makes it difficult to simply reuse code snippets from the examples, so I need to thoroughly think through every piece of it.
 
 ## Auditing data
 
@@ -52,11 +52,9 @@ TAG AND ATTRIBUTE COUNTS:
          'count': 75148}}
 ```
 
-But the bogger part of the data is stored in `tag` tags as key-value pairs in the `k` and `v` attributes. Let's look into these.
+But most of the interesting data is stored in `tag` tags as key-value pairs in the `k` and `v` attributes. Let's look into these.
 
 ### Auditing street names
-
-The first candidate for auditing is street names as this is the field where the most error might occur in the data.
 
 #### Gold standard of street types
 
@@ -66,11 +64,11 @@ For a 'gold standard' of types of public places I used the information from [Wik
 {'lakótelep', 'utca', 'határút', 'orom', 'erdősor', 'körtér', 'rakpart', 'út', 'üdülőpart', 'part', 'átjáró', 'dűlőút', 'lejáró', 'ösvény', 'sétány', 'forduló', 'liget', 'tér', 'árok', 'mélyút', 'sor', 'sikátor', 'sugárút', 'lejtő', 'körönd', 'kapu', 'határsor', 'gát', 'pincesor', 'dűlő', 'park', 'köz', 'udvar', 'körút', 'lépcső', 'fasor'}
 ```
 
-Pretty long, but the majority of them are fairly rare in the reality. I expect most of the datapoints in my dataset to end with _'utca'_ (street), _'út'_ (road) or _'tér'_ (square). (Maybe it's worth noting that in Hungarian we just put the type after the name of the street like 'Ilka _utca_' or 'Döbrentei _tér_', just as in English.)
+Pretty long, but the majority of them are fairly rare in the reality. I expect most of the datapoints in my dataset to end with _'utca'_ (street), _'út'_ (road) or _'tér'_ (square). (Maybe it's worth noting that in Hungarian we just put the type after the name of the street in small caps like 'Ilka _utca_' or 'Döbrentei _tér_')
 
 #### Checking street types
 
-Turns out the dataset is pretty clean... Even though I found 18 names that don't fit into any of the official categories, most of them actually make sense as these are grammatical variations of some basic types (eg. _'útja'_ means the road of someone or something, so absolutely valid). 
+Turns out the dataset is pretty clean... Even though I found 18 names that don't fit into any of the official categories, most of them actually make sense as these are grammatical variations of basic types (eg. _'útja'_ means the road of someone or something, so absolutely valid). 
 
 The rest are some unique places like a castle (yes, there are castles in Budapest!) with their unique names.
 
@@ -82,7 +80,7 @@ UNEXPECTED STREET NAMES:
  'Hadak útja',
  'Harminckettesek tere',
  'Ifjúság útja',
- 'Kucsma', <--- THIS IS INCORRECT
+ 'Kucsma',  # THIS IS INCORRECT
  'Kunigunda útja',
  'Magyar tudósok körútja',
  'Margitsziget',
@@ -117,14 +115,13 @@ The search also brought up a few cases where the street name starts with lower c
 ```
 ...
  'Zöldmáli lejtő': 7,
- 'dessewffy utca': 1,
- 'podmaniczky utca': 1,
- 'szabolcs utca': 1,
- 'százados út': 1,
+ 'dessewffy utca': 1,  # SMALL CAPS
+ 'podmaniczky utca': 1, # SMALL CAPS
+ 'szabolcs utca': 1, # SMALL CAPS
+ 'százados út': 1, # SMALL CAPS
  'Ábel Jenő utca': 4,
 ...
 ```
-
 
 ### Auditing postcodes
 
@@ -146,12 +143,110 @@ Based on these criteria four odd postcodes popped up in the audit. In the last o
 ### Auditing coordinates
 I audited lattitude and longitude coordinates to be float numbers around 47.5 and 19 respectively. Not surprisingly no odd coordinates popped up thanks to the way the data was obtained.
 
+## Querying the data
+
+#### Number of documents
+```
+> db.budapest.find().count()
+504875
+```
+
+#### Count by type of tag
+```
+> db.budapest.aggregate([
+    {'$group': {
+        '_id': '$type',
+        'count': {'$sum': 1}
+    }},
+    {'$project': {
+        '_id': 0,
+        'type': '$_id',
+        'count': 1
+    }}
+])
+
+[{'count': 7098, 'type': 'relation'},
+ {'count': 75148, 'type': 'way'},
+ {'count': 422629, 'type': 'node'}]
+```
+
+### Top 10 postcodes by number of occurence
+The 11th district is one of the biggest one (maybe the biggest one), no surprise that `x11x` postcodes are the most frequent in the dataset.
+
+```
+> db.budapest.aggregate([
+    {'$match': {
+        'address.postcode': {'$exists': True}
+    }},
+    {'$group': {
+        '_id': '$address.postcode',
+        'count': {'$sum': 1}
+    }},
+    {'$sort': {'count': -1}},
+    {'$limit': 10},
+    {'$project': {
+        '_id': 0,
+        'postcode': '$_id',
+        'count': 1
+    }}
+])
+
+[{'count': 1922, 'postcode': 1112},
+ {'count': 1566, 'postcode': 1118},
+ {'count': 1035, 'postcode': 1124},
+ {'count': 1025, 'postcode': 1025},
+ {'count': 735, 'postcode': 1089},
+ {'count': 702, 'postcode': 1131},
+ {'count': 562, 'postcode': 1121},
+ {'count': 561, 'postcode': 1126},
+ {'count': 538, 'postcode': 1085},
+ {'count': 528, 'postcode': 1113}]
+```
+
+### Number of contributing users
+
+```
+> db.budapest.distinct('created.user').length
+1232
+```
+
+#### Top 10 users
+
+```
+> db.budapest.aggregate([
+    {'$group': {
+        '_id': '$created.user',
+        'count': {'$sum': 1}
+    }},
+    {'$sort': {'count': -1}},
+    {'$limit': 10},
+    {'$project': {
+        '_id': 0,
+        'username': '$_id',
+        'count': 1
+    }}
+])
+
+[{'count': 134944, 'username': 'igor2'},
+ {'count': 33466, 'username': 'MartinHun'},
+ {'count': 23452, 'username': 'vasony'},
+ {'count': 22656, 'username': 'Adam Harangozó'},
+ {'count': 19440, 'username': 'BáthoryPéter'},
+ {'count': 19175, 'username': 'kdano'},
+ {'count': 15521, 'username': 'leveskockaa'},
+ {'count': 14983, 'username': 'denesviktor'},
+ {'count': 13360, 'username': 'flaktack'},
+ {'count': 12045, 'username': 'Athoss15'}]
+```
+
+
+
 ### Further ideas
 
 #### Dates and timestamps
-It would be useful for several reasons to have the timestamps in date format in MongoDB, but Python `datetime` objects cannot be serialized to JSON, so in this workflow there's no point in changing string timestamps to `datetime` objects with `datetime.strptime()`.
+It would be useful to have the timestamps in date format in MongoDB, but Python `datetime` objects cannot be serialized to JSON.
 
-There might be two ways to handle this:
+There might be several ways to handle this:
 
-1. Either before creating the JSON file transform string timestamps to UNIX timestamps and store them as integers. This makes somewhat easier to create date-based queries and still doesn't break JSON dump.
-2. Ot after importing the JSON data to MongoDB run a script that transforms the string timestamps to proper `datetime` objects and updates the appropriate field document-by-document. This might take a while but then we can use the timestamps as dates in queries and aggregations.
+1. Either before creating the JSON file transform string timestamps to UNIX timestamps and store them as integers. This makes somewhat easier to create date-based queries and still doesn't break the JSON dump, but not the most convenient way to handle timestamps.
+2. Or after importing the JSON data to MongoDB run a script that transforms the string timestamps to proper `datetime` objects and updates the appropriate field document-by-document. This would be a time consuming operation but then we can use the timestamps as dates in queries and aggregations.
