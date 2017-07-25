@@ -319,3 +319,36 @@ There might be several ways to handle this:
 
 1. Before creating the JSON file transform string timestamps to UNIX timestamps and store them as integers. This makes somewhat easier to create date-based queries and still doesn't break the JSON dump (still not the most convenient way to handle timestamps).
 2. After importing the JSON data to MongoDB run a script that transforms the string timestamps to proper `datetime` objects and updates the appropriate field document-by-document. This would be a time-consuming operation but then we can use the timestamps as dates in queries and aggregations.
+
+#### Improving the data with public transport lines
+
+Even though the dataset contains 1414 nodes tagged as bus-stops, the numbering of available bus lines are missing on these nodes. The dataset also contains 7 bigger bus stations, but only one of them has information on which bus lines are available there. It would be useful to enrich the dataset with bus, tram and local train line information.
+
+__Benefits:__
+* The data could be used for public transport mapping and travel planning applications.
+* It should be available at the local transportation company (BKK) in a complete and high quality format (but maybe not free), so no need for 'crowdsourcing' the initial upload.
+
+__Possible problems:__
+* The data might change frequently (either temporarily or permanently) so frequent updates and monitoring is needed (that's where crowdsourcing and gamification might come into play)
+* The public transport system of Budapest is huge which might produce vast amount of new data to process.
+
+``` python
+> db.budapest.find({'highway': 'bus_stop'}).count()
+1414
+
+> db.budapest.find({'amenity': 'bus_station', 'lines': {'$exists': True}})
+[{'_id': ObjectId('5975a8e22bfafbe107b8375e'),
+  'amenity': 'bus_station',
+  'created': {'changeset': '44636379',
+              'timestamp': '2016-12-24T00:04:59Z',
+              'uid': '2982309',
+              'user': 'vasony',
+              'version': '7'},
+  'id': '287438376',
+  'lines': '8, 139, 153, 153A, 154, 239',
+  'name': 'Gazdagréti lakótelep',
+  'operator': 'BKV',
+  'pos': [47.473576, 18.9926846],
+  'type': 'node',
+  'wheelchair': 'yes'}]
+```

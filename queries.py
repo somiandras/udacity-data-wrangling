@@ -111,3 +111,8 @@ cuisines = db.budapest.aggregate([
 
 print('\nTOP 3 RESTAURANT CUISINES:\n')
 pp.pprint(list(cuisines))
+
+
+# Count bus-stops
+stops = db.budapest.find({'highway': 'bus_stop'}).count()
+print('Number of bus-stops: {}'.format(stops))
