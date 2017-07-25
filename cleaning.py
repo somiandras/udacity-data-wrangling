@@ -39,9 +39,15 @@ def shape_element(element):
                 # Check for tags containing 'addr:...' but avoid 'addr:...:...' format tags
                 match = re.match('^addr:([^:]*)$', tag.attrib['k'])
                 if match:
+                    param = match.group(1)
                     if 'address' not in elem_data:
                         elem_data['address'] = {}
-                    elem_data['address'][match.group(1)] = tag.attrib['v']
+                    if param == 'street':
+                        elem_data['address'][param] = clean_streetname(tag.attrib['v'])
+                    elif param == 'postcode':
+                        elem_data['address'][param] = clean_postcode(tag.attrib['v'])
+                    else:
+                        elem_data['address'][param] = tag.attrib['v']
                 else:
                     # Non-address tags are simple properties on the element
                     elem_data[tag.attrib['k']] = tag.attrib['v']
@@ -86,16 +92,6 @@ def clean_postcode(postcode):
         return int(postcode)
 
 
-def correct_data_entry(elem_data):
-    '''Fix known issues in data before adding to the database'''
-    if 'address' in elem_data:
-        if 'street' in elem_data['address']:
-            elem_data['address']['street'] = clean_streetname(elem_data['address']['street'])
-        if 'postcode' in elem_data['address']:
-            elem_data['address']['postcode'] = clean_postcode(elem_data['address']['postcode'])
-    return elem_data
-
-
 def process_file():
     '''Transform the contents of the OSM XML file to a JSON file, based on the course examples'''
     data = []
@@ -103,9 +99,8 @@ def process_file():
         for event, elem in ET.iterparse(osm_file, events=('start',)):
             elem_data = shape_element(elem)
             if elem_data:
-                final_element = correct_data_entry(elem_data)
-                data.append(final_element)
-                file_out.write(json.dumps(final_element) + '\n')
+                data.append(elem_data)
+                file_out.write(json.dumps(elem_data) + '\n')
     return data
 
 
