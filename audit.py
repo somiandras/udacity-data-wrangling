@@ -84,34 +84,38 @@ def audit():
                 if not valid_coordinates(coordinates):
                     unexpected_coordinates.append(coordinates)
 
-        if tag == 'way':
-            for tag in elem.iter('tag'):
-                if tag.attrib['k'] == 'email':
-                    email = tag.attrib['v']
+        for tag in elem.iter('tag'):
+            if tag.attrib['k'] == 'email':
+                email = tag.attrib['v']
 
-                    if not is_valid_email(email):
-                        invalid_emails.append(email)
+                if not is_valid_email(email):
+                    invalid_emails.append(email)
 
-                if tag.attrib['k'] == 'addr:street':
-                    street = tag.attrib['v']
+            if tag.attrib['k'] == 'addr:street':
+                street = tag.attrib['v']
 
-                    if not is_proper_street_name(street):
-                        unexpected_street_names.add(street)
+                if not is_proper_street_name(street):
+                    unexpected_street_names.add(street)
 
-                    if street not in street_names:
-                        street_names[street] = 0
-                    street_names[street] += 1
+                if street not in street_names:
+                    street_names[street] = 0
+                street_names[street] += 1
 
-                if tag.attrib['k'] == 'addr:postcode':
-                    postcode = tag.attrib['v']
+            if tag.attrib['k'] == 'addr:postcode':
+                postcode = tag.attrib['v']
 
-                    if not is_valid_postcode(postcode):
-                        if postcode not in unexpected_postcodes:
-                            unexpected_postcodes[postcode] = {'count': 0, 'streets': []}
-                        unexpected_postcodes[postcode]['count'] += 1
+                if not is_valid_postcode(postcode):
+                    if postcode not in unexpected_postcodes:
+                        unexpected_postcodes[postcode] = {'count': 0, 'streets': []}
+                    unexpected_postcodes[postcode]['count'] += 1
 
-                        # Get the parent element's child tag with k = addr:street attribute and extract the value
+                    # Get the parent element's child tag with k = addr:street attribute and extract the value
+                    try:
                         street_address = [item.attrib['v'] for item in elem.getchildren() if item.tag == 'tag' and item.attrib['k'] == 'addr:street'][0]
+                    except IndexError:
+                        # No addr:street tags on parent, skip
+                        pass
+                    else:
                         unexpected_postcodes[postcode]['streets'].append(street_address)
 
 
