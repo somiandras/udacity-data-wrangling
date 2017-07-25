@@ -1,4 +1,4 @@
-# Data Wrangling Project<br><small>András Somi, 2017. July</small>
+# Data Wrangling Project<br><small>András Somi, 2017. July - Updated version</small>
 
 ## Data
 
@@ -100,6 +100,8 @@ The search also brought up a few cases where the street name starts with lower c
 ...
 ```
 
+__UPDATE:__ After first rewiew I found a bug that limited the street name and postcode audit to `<way>` tags. After fixing it some other odd street names popped up (eg. _'Táncsics Mihály utca 5'_ and  _'Városmajor utca 5. fsz. 3.'_) where the street name field contains the house number too.
+
 ### Auditing postcodes
 
 In Hungary we use four-digit postcodes. All Budapest postcodes start with 1 and the second and third digit denotes the number of district. There are 23 districts in the city, so the inner two digits should be between 01 and 23, except for the island called Margitsziget, where the inner two digits are 00. 
@@ -115,6 +117,16 @@ Four odd postcodes popped up in the audit. In the last one 'H' denotes Hungary i
  '1503': {'count': 1, 'tags': ['Kérő utca']},
  '1507': {'count': 1, 'tags': ['Irinyi József utca']},
  'H-1026': {'count': 2, 'tags': ['Pasaréti út', 'Pasaréti út']}}
+```
+
+### UPDATE: Auditing email addresses
+
+Strict email validation can be tricky, but obvious outliers can be filtered out by using a simple regular expression to control for the necessary elements (eg. '@', domain, extension). This surfaced only one entry, which turned out to be valid, my regex just did not include '_' as a valid character.
+
+``` python
+INVALID EMAIL ADDRESSES:
+
+['fovarosi_keptar@mail.btm.hu', 'fovarosi_keptar@mail.btm.hu']
 ```
 
 ### Auditing coordinates
