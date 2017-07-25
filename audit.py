@@ -14,6 +14,7 @@ street_names = {}
 unexpected_street_names = set()
 unexpected_postcodes = {}
 unexpected_coordinates = []
+invalid_emails = []
 
 
 def is_proper_street_name(street_name):
@@ -35,6 +36,13 @@ def is_valid_postcode(postcode):
         if inner_digits <= 23:
             return True
     return False
+
+
+def is_valid_email(email):
+    '''Rudimentary check for obviously outlier email addresses'''
+    email_format = '[0-9, a-z, ., -]+@[0-9, a-z, ., -]+\.[a-z]{2,5}'
+    match = re.match(email_format, email.lower())
+    return bool(match)
 
 
 def valid_coordinates(coordinates):
@@ -78,6 +86,12 @@ def audit():
 
         if tag == 'way':
             for tag in elem.iter('tag'):
+                if tag.attrib['k'] == 'email':
+                    email = tag.attrib['v']
+
+                    if not is_valid_email(email):
+                        invalid_emails.append(email)
+
                 if tag.attrib['k'] == 'addr:street':
                     street = tag.attrib['v']
 
@@ -116,6 +130,9 @@ def audit():
 
     print('\nUNEXPECTED COORDINATES:\n')
     pp.pprint(unexpected_coordinates)
+
+    print('\nINVALID EMAIL ADDRESSES:\n')
+    print(invalid_emails)
 
 
 if __name__ == '__main__':
