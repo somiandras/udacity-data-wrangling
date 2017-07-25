@@ -320,7 +320,7 @@ There might be several ways to handle this:
 1. Before creating the JSON file transform string timestamps to UNIX timestamps and store them as integers. This makes somewhat easier to create date-based queries and still doesn't break the JSON dump (still not the most convenient way to handle timestamps).
 2. After importing the JSON data to MongoDB run a script that transforms the string timestamps to proper `datetime` objects and updates the appropriate field document-by-document. This would be a time-consuming operation but then we can use the timestamps as dates in queries and aggregations.
 
-#### Improving the data with public transport lines
+#### UPDATE: Improving the data with public transport lines
 
 Even though the dataset contains 1414 nodes tagged as bus-stops, the numbering of available bus lines are missing on these nodes. The dataset also contains 7 bigger bus stations, but only one of them has information on which bus lines are available there. It would be useful to enrich the dataset with bus, tram and local train line information.
 
@@ -330,7 +330,7 @@ __Benefits:__
 
 __Possible problems:__
 * The data might change frequently (either temporarily or permanently) so frequent updates and monitoring is needed (that's where crowdsourcing and gamification might come into play)
-* The public transport system of Budapest is huge which might produce vast amount of new data to process.
+* The public transport system of Budapest is huge which might produce vast amount of data to process.
 
 ``` python
 > db.budapest.find({'highway': 'bus_stop'}).count()
