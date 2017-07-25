@@ -99,7 +99,7 @@ def clean_phone_numbers(phone_number):
     '''Transform phone number to +36 1 xxx xxxx or +36 xx xxx xxxx format.'''
     prefered_format = '\+36\s[1-9]0?\s[0-9]{3}\s[0-9]{4}$'
     match = re.match(prefered_format, phone_number)
-    
+
     # Return if the phone number already follows the preferred pattern
     if bool(match):
         return phone_number

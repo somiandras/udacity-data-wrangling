@@ -1,4 +1,4 @@
-# Data Wrangling Project<br><small>András Somi, 2017. July - Updated version</small>
+# Data Wrangling Project<br><small>András Somi, 2017. July - Updated version 2</small>
 
 ## Data
 
@@ -154,6 +154,96 @@ In `cleaning.py` I managed to programatically format most of the phone numbers t
 ### Auditing coordinates
 
 I audited lattitude and longitude coordinates to be float numbers around 47.5 and 19 respectively. Not surprisingly no odd coordinates popped up thanks to the way the data was obtained.
+
+## Cleaning the data
+
+In `cleaning.py` I performed several cleaning steps during the shaping of the OSM XML elements into Python dictionaries before appending them to the output JSON file. I give a brief description here, but the commented code is also self-explanatory.
+
+#### 1. Cleaning streetnames
+
+The main issue was lowercase streetnames, which can be detected by checking whether the streetname equals it's own lowercase variant (meaning there's no uppercase letter in it). Then the transformation is made by creating a new string from the uppercase initial letter and the rest. I also replaced two instances where _'utca'_ (street) was missing from the end.
+
+``` python
+def clean_streetname(streetname):
+    '''Programatically fix issues of street names'''
+    if streetname in ['Kucsma', 'Dohány']:
+        new_streetname = streetname + ' utca'
+    elif streetname.lower() == streetname:
+        new_streetname = streetname[0].upper() + streetname[1:]
+    else:
+        new_streetname = streetname
+    return new_streetname
+```
+
+#### 2. Cleaning postcodes
+
+Although not many problematic postcode reared their head during the audit, there was one specific pattern, the appearance of _'H-'_ at the beginning, that should be programatically corrected by returning a slice of the string. I also replaced two instances of wrong postcodes (probably typos), and returned the postcode in `int` instead of `str`.
+
+``` python
+def clean_postcode(postcode):
+    '''Programatically fix issues with postcodes'''
+    postcode_string = str(postcode)
+    if postcode_string[:2] == 'H-':
+        return int(postcode_string[2:])
+    elif postcode_string == '1503':
+        return 1053
+    elif postcode_string == '1507':
+        return 1057
+    else:
+        return int(postcode)
+```
+
+#### 3. Cleaning phone numbers
+
+That was the toughest bit, as lots of different patterns appeared in the dataset. These were the steps:
+
+1. Define a regular expression for the preferred pattern.
+2. Remove special characters (/, (, ), -) and all the whitespaces. 
+3. Replace at the beginning the '0036', '036', '006' or '06' digits of country code with the preferred format ('+36').
+4. Or add '+36' to the beginning if it's still missing (because the original string did not contain any form of country code, so there were nothing to replace in the previous step).
+5.  We now have a sort of (semi-)standardized format from which we can pick those strings that only contain the proper number of digits (8 or 9) and start with '+36'.
+6. Add some whitespace to these to get the preferred format and return the formatted string.
+7. Log an error for the rest that cannot be standardized this way.
+
+This process handles the majority of the erroneous phone numbers, though some patterns still can be found in the rest (eg. multiple phone numbers in one row or an extension added with some special characters) that might also be handled in a programatic way.
+
+``` python
+def clean_phone_numbers(phone_number):
+    '''Transform phone number to +36 1 xxx xxxx or +36 xx xxx xxxx format.'''
+    prefered_format = '\+36\s[1-9]0?\s[0-9]{3}\s[0-9]{4}$'
+    match = re.match(prefered_format, phone_number)
+
+    # Return if the phone number already follows the preferred pattern
+    if bool(match):
+        return phone_number
+
+    # Remove special characters and whitespaces
+    stripped = re.sub('[/()-]', '', phone_number).replace(' ', '')
+
+    # Replace the country code with the right format
+    replaced = re.sub('^0036|^06|^006|^036', '+36', stripped)
+
+    # Insert country code to the beginnig if it's missing
+    # but the number otherwise seems good (strictly 8 or 9 digits)
+    if replaced[:3] != '+36' and re.match('^[0-9]{8,9}$', replaced):
+        replaced = '+36' + replaced
+
+    # Budapest landlines
+    if len(replaced) == 11 and replaced[:3] == '+36' and replaced[3:4] == '1':
+        formatted = replaced[:3] + ' ' + replaced[3:4] + ' ' + replaced[4:7] + ' ' + replaced[7:]
+
+    # Mobile or non-Budapest landline
+    elif len(replaced) == 12 and replaced[:3] == '+36':
+        formatted = replaced[:3] + ' ' + replaced[3:5] + ' ' + replaced[5:8] + ' ' + replaced[8:]
+
+    # If it doesn't fit into any categories log the error and return the original
+    else:
+        logging.error('Cannot process phone number: {0}'.format(phone_number))
+        return phone_number
+
+    return formatted
+```
+
 
 ## Querying the data
 
