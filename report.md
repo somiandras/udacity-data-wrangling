@@ -147,7 +147,7 @@ Some examples of the phone number field in the dataset:
 * '(1) 815 1100'
 * '+36-1-213-9039'
 
-I prefer having phone numbers in _+36 xx xxx xxxx_ format, with only whitespaces, no hyphens or brackets. Please note that landlines in Budapest follow the _+36 1 xxx xxxx_ pattern, while mobile numbers and landlines outside Budapest are in a _+36 xx xxx xxxx_ format (one extra digit after the country code).
+I prefer having phone numbers in _+36 xx xxx xxxx_ format, with only whitespaces, no hyphens or brackets. Please note that landlines in Budapest follow the _+36 1 xxx xxxx_ pattern, while mobile numbers and landlines outside Budapest are in a _+36 xx xxx xxxx_ format (one extra digit after the country code). So the first one is correct above, but not the others.
 
 In `cleaning.py` I managed to programatically format most of the phone numbers that otherwise seemed correct, but a handful of cases still remain (eg. several phone numbers in a single field, missing or extra digits, etc.).
 
@@ -177,7 +177,7 @@ def clean_streetname(streetname):
 
 #### 2. Cleaning postcodes
 
-Although not many problematic postcode reared their head during the audit, there was one specific pattern, the appearance of _'H-'_ at the beginning, that should be programatically corrected by returning a slice of the string. I also replaced two instances of wrong postcodes (probably typos), and returned the postcode in `int` instead of `str`.
+Although not many problematic postcode reared their head during the audit, there was one specific pattern, the appearance of _'H-'_ at the beginning, that should be programatically corrected by returning a slice of the string. I also replaced two instances of wrong postcodes (probably typos).
 
 ``` python
 def clean_postcode(postcode):
@@ -195,13 +195,13 @@ def clean_postcode(postcode):
 
 #### 3. Cleaning phone numbers
 
-That was the toughest bit, as lots of different patterns appeared in the dataset. These were the steps:
+That was the toughest bit, as lots of different patterns appeared in the dataset. These were the steps to standardize them into the preferred (either _+36 xx xxx xxxx_ or _+36 1 xxx xxxx_ format).
 
 1. Define a regular expression for the preferred pattern.
 2. Remove special characters (/, (, ), -) and all the whitespaces. 
 3. Replace at the beginning the '0036', '036', '006' or '06' digits of country code with the preferred format ('+36').
 4. Or add '+36' to the beginning if it's still missing (because the original string did not contain any form of country code, so there were nothing to replace in the previous step).
-5.  We now have a sort of (semi-)standardized format from which we can pick those strings that only contain the proper number of digits (8 or 9) and start with '+36'.
+5.  We now have a sort of (semi-)standardized format from which we can pick those strings that only contain the proper number of digits (8 or 9) besides the '+36' at the beginning.
 6. Add some whitespace to these to get the preferred format and return the formatted string.
 7. Log an error for the rest that cannot be standardized this way.
 
