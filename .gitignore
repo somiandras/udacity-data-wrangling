@@ -3,3 +3,4 @@
 *.osm
 *.json
 study.py
+*.log
