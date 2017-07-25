@@ -4,7 +4,8 @@
 import re
 import lxml.etree as ET
 import json
-
+import logging
+logging.basicConfig(filename='clean.log')
 
 osm_file = 'budapest_hungary_inner.osm'
 TAGS_TO_PROCESS = ['node', 'way', 'relation']
@@ -48,8 +49,10 @@ def shape_element(element):
                         elem_data['address'][param] = clean_postcode(tag.attrib['v'])
                     else:
                         elem_data['address'][param] = tag.attrib['v']
+                elif tag.attrib['k'] == 'phone':
+                    elem_data['phone'] = clean_phone_numbers(tag.attrib['v'])
                 else:
-                    # Non-address tags are simple properties on the element
+                    # Other tags are simple properties on the element
                     elem_data[tag.attrib['k']] = tag.attrib['v']
             elif tag.tag == 'nd':
                 if 'ref' in tag.attrib:
@@ -90,6 +93,42 @@ def clean_postcode(postcode):
         return 1057
     else:
         return int(postcode)
+
+
+def clean_phone_numbers(phone_number):
+    '''Transform phone number to +36 1 xxx xxxx or +36 xx xxx xxxx format.'''
+    prefered_format = '\+36\s[1-9]0?\s[0-9]{3}\s[0-9]{4}$'
+    match = re.match(prefered_format, phone_number)
+    
+    # Return if the phone number already follows the preferred pattern
+    if bool(match):
+        return phone_number
+
+    # Remove special characters and whitespaces
+    stripped = re.sub('[/()-]', '', phone_number).replace(' ', '')
+
+    # Replace the country code with the right format
+    replaced = re.sub('^0036|^06|^006|^036', '+36', stripped)
+
+    # Insert country code to the beginnig if it's missing
+    # but the number otherwise seems good (strictly 8 or 9 digits)
+    if replaced[:3] != '+36' and re.match('^[0-9]{8,9}$', replaced):
+        replaced = '+36' + replaced
+
+    # Budapest landlines
+    if len(replaced) == 11 and replaced[:3] == '+36' and replaced[3:4] == '1':
+        formatted = replaced[:3] + ' ' + replaced[3:4] + ' ' + replaced[4:7] + ' ' + replaced[7:]
+
+    # Mobile or non-Budapest landline
+    elif len(replaced) == 12 and replaced[:3] == '+36':
+        formatted = replaced[:3] + ' ' + replaced[3:5] + ' ' + replaced[5:8] + ' ' + replaced[8:]
+
+    # If it doesn't fit into any categories log the error and return the original
+    else:
+        logging.error('Cannot process phone number: {0}'.format(phone_number))
+        return phone_number
+
+    return formatted
 
 
 def process_file():

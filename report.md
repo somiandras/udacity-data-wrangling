@@ -131,7 +131,7 @@ INVALID EMAIL ADDRESSES:
 
 ### UPDATE: Auditing phone numbers
 
-Just by printing out all the phone numbers it's quite clear this field is really a mess. At least a handful of patterns are visible and quite a few odd formats are also present (and some obvious errors, like an email address). Most of this can be transformed programatically but many of the entries have to be cleaned by hand.
+Just by printing out all the phone numbers it's quite clear this data is really a mess. At least a handful of patterns are visible and quite a few odd formats are also present (and some obvious errors, like email addresses stored as phone numbers). Most of this can be transformed programatically but many of the entries have to be cleaned by hand.
 
 Some examples of the phone number field in the dataset:
 
@@ -148,6 +148,8 @@ Some examples of the phone number field in the dataset:
 * '+36-1-213-9039'
 
 I prefer having phone numbers in _+36 xx xxx xxxx_ format, with only whitespaces, no hyphens or brackets. Please note that landlines in Budapest follow the _+36 1 xxx xxxx_ pattern, while mobile numbers and landlines outside Budapest are in a _+36 xx xxx xxxx_ format (one extra digit after the country code).
+
+In `cleaning.py` I managed to programatically format most of the phone numbers that otherwise seemed correct, but a handful of cases still remain (eg. several phone numbers in a single field, missing or extra digits, etc.).
 
 ### Auditing coordinates
 
