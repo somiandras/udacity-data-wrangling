@@ -15,7 +15,7 @@ unexpected_street_names = set()
 unexpected_postcodes = {}
 unexpected_coordinates = []
 invalid_emails = []
-
+odd_phone_numbers = []
 
 def is_proper_street_name(street_name):
     '''Check whether the type in the street name is included in the official list of types'''
@@ -48,6 +48,12 @@ def is_valid_email(email):
 def valid_coordinates(coordinates):
     '''Check whether lat, lon coordinates are of the right magnitude'''
     return round(coordinates[0], 1) == 47.5 and round(coordinates[1], 0) == 19
+
+
+def is_preferred_format(phone_number):
+    pref_format = '\+36\s[1-9]0?\s[0-9]{3}\s[0-9]{4}$'
+    match = re.match(pref_format, phone_number)
+    return bool(match)
 
 
 def count_tags(tag, attributes):
@@ -85,6 +91,12 @@ def audit():
                     unexpected_coordinates.append(coordinates)
 
         for tag in elem.iter('tag'):
+            if tag.attrib['k'] == 'phone':
+                phone_number = tag.attrib['v']
+
+                if not is_preferred_format(phone_number):
+                    odd_phone_numbers.append(phone_number)
+
             if tag.attrib['k'] == 'email':
                 email = tag.attrib['v']
 
@@ -136,7 +148,11 @@ def audit():
     pp.pprint(unexpected_coordinates)
 
     print('\nINVALID EMAIL ADDRESSES:\n')
-    print(invalid_emails)
+    pp.pprint(invalid_emails)
+
+    print('\nODD PHONE NUMBERS:\n')
+    print('Number of oddly formatted phone numbers: {}'.format(len(odd_phone_numbers)))
+    pp.pprint(odd_phone_numbers)
 
 
 if __name__ == '__main__':

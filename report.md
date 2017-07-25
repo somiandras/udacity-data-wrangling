@@ -129,6 +129,26 @@ INVALID EMAIL ADDRESSES:
 ['fovarosi_keptar@mail.btm.hu', 'fovarosi_keptar@mail.btm.hu']
 ```
 
+### UPDATE: Auditing phone numbers
+
+Just by printing out all the phone numbers it's quite clear this field is really a mess. At least a handful of patterns are visible and quite a few odd formats are also present (and some obvious errors, like an email address). Most of this can be transformed programatically but many of the entries have to be cleaned by hand.
+
+Some examples of the phone number field in the dataset:
+
+* +36 1 413 0652
+* +36 1 4131310
+* '+36 21 3813980,+36 21 3813981,+36 21 3813977'
+* '+361-952-0432'
+* '+3612001348'
+* '+3670 520 99 53',
+* '437-9011'
+* '23948400242'
+* '(06-1) 459-2302'
+* '(1) 815 1100'
+* '+36-1-213-9039'
+
+I prefer having phone numbers in _+36 xx xxx xxxx_ format, with only whitespaces, no hyphens or brackets. Please note that landlines in Budapest follow the _+36 1 xxx xxxx_ pattern, while mobile numbers and landlines outside Budapest are in a _+36 xx xxx xxxx_ format (one extra digit after the country code).
+
 ### Auditing coordinates
 
 I audited lattitude and longitude coordinates to be float numbers around 47.5 and 19 respectively. Not surprisingly no odd coordinates popped up thanks to the way the data was obtained.

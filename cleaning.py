@@ -70,8 +70,8 @@ def shape_element(element):
 
 def clean_streetname(streetname):
     '''Programatically fix issues of street names'''
-    if streetname == 'Kucsma':
-        new_streetname = 'Kucsma utca'
+    if streetname in ['Kucsma', 'Dohány']:
+        new_streetname = streetname + ' utca'
     elif streetname.lower() == streetname:
         new_streetname = streetname[0].upper() + streetname[1:]
     else:
