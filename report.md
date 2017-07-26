@@ -1,4 +1,4 @@
-# Data Wrangling Project<br><small>András Somi, 2017. July - Updated version 2</small>
+# Data Wrangling Project<br><small>András Somi, 2017. July - Final version</small>
 
 ## Data
 
@@ -7,7 +7,7 @@
 
 I created a custom Metro extract on Mapzen for the inner parts of Budapest, capitol of Hungary. The available basic extract of Budapest area was way bigger than this exercise requires (close to 1GB) and also contained areas that in reality are not part of the city (that may cause conflicts in postcodes or street name duplications).
 
-I live in the city, I have a general understanding of the naming conventions, special characters, etc. Also the different language makes it difficult to simply reuse code snippets from the examples, so I need to thoroughly think through every piece of it.
+I live in the city, I have a general understanding of the naming conventions, special characters, etc. Also the different language makes it difficult to simply reuse code snippets from the examples, so I need to thoroughly think through every piece.
 
 __Source:__ [https://mapzen.com/data/metro-extracts/metro/budapest_hungary/](https://mapzen.com/data/metro-extracts/metro/budapest_hungary/)
 
@@ -100,11 +100,11 @@ The search also brought up a few cases where the street name starts with lower c
 ...
 ```
 
-__UPDATE:__ After first rewiew I found a bug that limited the street name and postcode audit to `<way>` tags. After fixing it some other odd street names popped up (eg. _'Táncsics Mihály utca 5'_ and  _'Városmajor utca 5. fsz. 3.'_) where the street name field contains the house number too.
+*__Note:__ After the first rewiew I found a bug that limited the street name and postcode audit to `<way>` tags. After fixing it some other odd street names popped up (eg. _'Táncsics Mihály utca 5'_ and  _'Városmajor utca 5. fsz. 3.'_) where the street name field contains the house number too.*
 
 ### Auditing postcodes
 
-In Hungary we use four-digit postcodes. All Budapest postcodes start with 1 and the second and third digit denotes the number of district. There are 23 districts in the city, so the inner two digits should be between 01 and 23, except for the island called Margitsziget, where the inner two digits are 00. 
+In Hungary we use four-digit postcodes. All Budapest postcodes start with 1 and the second and third digits denote the number of the district. There are 23 districts in the city, so the inner two digits should be between 01 and 23, except for the island called Margitsziget, where the inner two digits are 00. 
 
 There are no residential areas on the island but there are some cultural and sports facilities so we should still expect a few 00s to pop up in the dataset. ([The Districts of Budapest (Wikipedia)](https://en.wikipedia.org/wiki/List_of_districts_in_Budapest))
 
@@ -119,7 +119,7 @@ Four odd postcodes popped up in the audit. In the last one 'H' denotes Hungary i
  'H-1026': {'count': 2, 'tags': ['Pasaréti út', 'Pasaréti út']}}
 ```
 
-### UPDATE: Auditing email addresses
+### Auditing email addresses
 
 Strict email validation can be tricky, but obvious outliers can be filtered out by using a simple regular expression to control for the necessary elements (eg. '@', domain, extension). This surfaced only one entry, which turned out to be valid, my regex just did not include '_' as a valid character.
 
@@ -129,7 +129,7 @@ INVALID EMAIL ADDRESSES:
 ['fovarosi_keptar@mail.btm.hu', 'fovarosi_keptar@mail.btm.hu']
 ```
 
-### UPDATE: Auditing phone numbers
+### Auditing phone numbers
 
 Just by printing out all the phone numbers it's quite clear this data is really a mess. At least a handful of patterns are visible and quite a few odd formats are also present (and some obvious errors, like email addresses stored as phone numbers). Most of this can be transformed programatically but many of the entries have to be cleaned by hand.
 
@@ -302,6 +302,7 @@ The 11th district is one of the biggest one (maybe the biggest one), no surprise
 
 #### Number of contributing users
 Not too many compared to the population of 2 million people...
+
 ``` python
 > db.budapest.distinct('created.user').length
 1232
@@ -410,22 +411,23 @@ There might be several ways to handle this:
 1. Before creating the JSON file transform string timestamps to UNIX timestamps and store them as integers. This makes somewhat easier to create date-based queries and still doesn't break the JSON dump (still not the most convenient way to handle timestamps).
 2. After importing the JSON data to MongoDB run a script that transforms the string timestamps to proper `datetime` objects and updates the appropriate field document-by-document. This would be a time-consuming operation but then we can use the timestamps as dates in queries and aggregations.
 
-#### UPDATE: Improving the data with public transport lines
+#### Improving the data with public transport lines
 
 Even though the dataset contains 1414 nodes tagged as bus-stops, the numbering of available bus lines are missing on these nodes. The dataset also contains 7 bigger bus stations, but only one of them has information on which bus lines are available there. It would be useful to enrich the dataset with bus, tram and local train line information.
 
 __Benefits:__
+
 * The data could be used for public transport mapping and travel planning applications.
 * It should be available at the local transportation company (BKK) in a complete and high quality format (but maybe not free), so no need for 'crowdsourcing' the initial upload.
 
 __Possible problems:__
+
 * The data might change frequently (either temporarily or permanently) so frequent updates and monitoring is needed (that's where crowdsourcing and gamification might come into play)
 * The public transport system of Budapest is huge which might produce vast amount of data to process.
 
 ``` python
 > db.budapest.find({'highway': 'bus_stop'}).count()
 1414
-
 > db.budapest.find({'amenity': 'bus_station', 'lines': {'$exists': True}})
 [{'_id': ObjectId('5975a8e22bfafbe107b8375e'),
   'amenity': 'bus_station',
